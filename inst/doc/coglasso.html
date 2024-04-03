@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Reconstructing mult-omics networks with coglasso</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Reconstructing mult-omics networks with
+coglasso</h1>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>This vignette illustrates the basic usage of the coglasso package to
+reconstruct a multi-omics network. The package implements and R
+interface to <em>collaborative graphical lasso</em>, a network
+estimation algorithm based on <em>graphical lasso</em> (<a href="#ref">Friedman, Hastie and Tibshirani, 2008</a>) and
+<em>collaborative regression</em> (<a href="#ref">Gross and Tibshirani,
+2015</a>)</p>
+<p>Let us first attach coglasso.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(coglasso)</span></code></pre></div>
+<p>We then choose the multi-omics data set to use. The coglasso package
+offers three alternative version of a transcriptomics and metabolomics
+data set. We will use <code>multi_omics_sd_small</code>. For further
+explanation about all the multi-omics data sets see
+<code>help(multi_omics_sd)</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">colnames</span>(multi_omics_sd_small)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co">#&gt;  [1] &quot;Cirbp&quot;       &quot;Hspa5&quot;       &quot;P4ha1&quot;       &quot;Spred1&quot;      &quot;Creld2&quot;     </span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co">#&gt;  [6] &quot;Pdia6&quot;       &quot;Hsp90b1&quot;     &quot;Hsph1&quot;       &quot;Manf&quot;        &quot;Pdia3&quot;      </span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; [11] &quot;Dnajb11&quot;     &quot;Dnajc3&quot;      &quot;BC004004&quot;    &quot;Stip1&quot;       &quot;Phe&quot;        </span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt; [16] &quot;Trp&quot;         &quot;Putrescine&quot;  &quot;PC aa C36:3&quot; &quot;PC ae C32:2&quot;</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="fu">nrow</span>(multi_omics_sd_small)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; [1] 30</span></span></code></pre></div>
+<p>This smaller version of <code>multi_omics_sd</code> has 19 variables,
+14 genes and 5 metabolites, and 30 samples. We can directly proceed with
+network reconstruction.</p>
+</div>
+<div id="multi-omics-network-reconstruction" class="section level2">
+<h2>Multi-omics network reconstruction</h2>
+<p>Our objective is to reconstruct a network from this data set using
+<em>collaborative graphical lasso</em>. To do so with the coglasso
+package, we mainly call two functions. First, we use
+<code>coglasso()</code> to estimate a network for every combination of
+hyperparameters we want to explore. Following this, we call
+<code>stars_coglasso()</code> to select the best combination of
+hyperparameters using stability selection.</p>
+<p>The usual application of <code>coglasso()</code> requires to give an
+input data set to the argument <code>data</code>, the number of
+variables of the the first type to <code>pX</code>, and hyperparameter
+settings. Collaborative graphical lasso has three hyperparameters: <span class="math inline">\(λ_w\)</span>, penalizing “within” same-type
+interactions, <span class="math inline">\(λ_b\)</span> penalizing
+“between” different-type interactions, and <span class="math inline">\(c\)</span>, the weight of the collaborative term.
+In this vignette we choose to explore 15 possible penalty values for
+both “within” and “between” penalties, and three possible collaboration
+values. We do so by setting both <code>nlambda_w</code> and
+<code>nlambda_b</code> to 15, and by setting <code>nc</code> to 3. We
+also decide to restrict our search to a less extreme penalization, by
+setting a fixed maximum value for both penalties to 0.85, while by
+default it is often estimated to a higher value with a data-driven
+approach. Nevertheless, we also decide to focus our search to the sparse
+side of possible networks. We achieve this by setting to a fixed value
+the ratios between the smallest (least penalizing) and the largest (most
+penalizing) penalty explored. While the default value of these
+parameters is 0.1, we decide to set the minimum ratio to 0.6 for <span class="math inline">\(λ_w\)</span> and to 0.4 for <span class="math inline">\(λ_b\)</span>. For further explanation on other
+arguments of <code>coglasso()</code> and how to use them, please see
+<code>help(coglasso)</code>.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>cg <span class="ot">&lt;-</span> <span class="fu">coglasso</span>(multi_omics_sd_small,</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="at">pX =</span> <span class="dv">14</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">nlambda_w =</span> <span class="dv">15</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">nlambda_b =</span> <span class="dv">15</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">nc =</span> <span class="dv">3</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">lambda_w_max =</span> <span class="fl">0.85</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="at">lambda_b_max =</span> <span class="fl">0.85</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  <span class="at">lambda_w_min_ratio =</span> <span class="fl">0.6</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="at">lambda_b_min_ratio =</span> <span class="fl">0.4</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="cn">FALSE</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>)</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co"># To see the explored paramaters:</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>cg<span class="sc">$</span>lambda_w</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt;  [1] 0.8500000 0.8195446 0.7901804 0.7618683 0.7345706 0.7082511 0.6828745</span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt;  [8] 0.6584072 0.6348165 0.6120711 0.5901407 0.5689960 0.5486089 0.5289523</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt; [15] 0.5100000</span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>cg<span class="sc">$</span>lambda_b</span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&gt;  [1] 0.8500000 0.7961495 0.7457107 0.6984673 0.6542169 0.6127700 0.5739489</span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt;  [8] 0.5375872 0.5035292 0.4716288 0.4417495 0.4137631 0.3875498 0.3629971</span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt; [15] 0.3400000</span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>cg<span class="sc">$</span>c</span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="co">#&gt; [1] 10.000000  3.162278  1.000000</span></span></code></pre></div>
+<p>To select the best combination of hyperparameters, we will use
+<code>stars_coglasso()</code>. This function implements a
+coglasso-adapted version of <em>StARS</em>, the stability selection
+method developed by Liu, Roeder and Wasserman (<a href="#ref">2010</a>).
+The usual application of <code>stars_coglasso()</code> uses the default
+options of the function, whose only required input is the object
+resulting from <code>coglasso()</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>sel_cg <span class="ot">&lt;-</span> <span class="fu">stars_coglasso</span>(cg, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co"># To see the selected parameters:</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>sel_cg<span class="sc">$</span>sel_lambda_w</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; [1] 0.85</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>sel_cg<span class="sc">$</span>sel_lambda_b</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt; [1] 0.61277</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>sel_cg<span class="sc">$</span>sel_c</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; [1] 3.162278</span></span></code></pre></div>
+<p>With this we have selected the combination of hyperparameters
+yielding the most stable, yet sparse coglasso network. The adjacency
+matrix of the selected network is stored in the object
+<code>sel_cg$sel_adj</code>. We can use this matrix to display the
+selected network with the R package <code>igraph</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># To create the igraph object from the selected adjacency matrix:</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>sel_graph <span class="ot">&lt;-</span> igraph<span class="sc">::</span><span class="fu">graph.adjacency</span>(sel_cg<span class="sc">$</span>sel_adj, <span class="at">mode =</span> <span class="st">&quot;undirected&quot;</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co"># Setting some graphical parameters and removing disconnected nodes from the graph</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">V</span>(sel_graph)<span class="sc">$</span>label <span class="ot">&lt;-</span> <span class="fu">colnames</span>(multi_omics_sd_small)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">V</span>(sel_graph)<span class="sc">$</span>color <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="st">&quot;#00ccff&quot;</span>, <span class="dv">14</span>), <span class="fu">rep</span>(<span class="st">&quot;#ff9999&quot;</span>, <span class="dv">5</span>))</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">V</span>(sel_graph)<span class="sc">$</span>frame.color <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="st">&quot;#002060&quot;</span>, <span class="dv">14</span>), <span class="fu">rep</span>(<span class="st">&quot;#800000&quot;</span>, <span class="dv">5</span>))</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">V</span>(sel_graph)<span class="sc">$</span>frame.width <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">V</span>(sel_graph)<span class="sc">$</span>size <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">30</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">E</span>(sel_graph)<span class="sc">$</span>width <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>lo <span class="ot">&lt;-</span> igraph<span class="sc">::</span><span class="fu">layout_with_fr</span>(sel_graph)</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>diconnected <span class="ot">&lt;-</span> <span class="fu">which</span>(igraph<span class="sc">::</span><span class="fu">degree</span>(sel_graph) <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>sel_graph2 <span class="ot">&lt;-</span> igraph<span class="sc">::</span><span class="fu">delete.vertices</span>(sel_graph, diconnected)</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>lo2 <span class="ot">&lt;-</span> lo[<span class="sc">-</span>diconnected, ]</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="co"># Plotting</span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="fu">plot</span>(sel_graph2, <span class="at">layout =</span> lo2)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+</div>
+<div id="ref" class="section level2">
+<h2>References</h2>
+<p>Friedman, J., Hastie, T., &amp; Tibshirani, R. (2008). Sparse inverse
+covariance estimation with the graphical lasso. <em>Biostatistics</em>,
+9(3), 432–441. <a href="https://doi.org/10.1093/biostatistics/kxm045" class="uri">https://doi.org/10.1093/biostatistics/kxm045</a></p>
+<p>Gross, S. M., &amp; Tibshirani, R. (2015). Collaborative regression.
+<em>Biostatistics</em>, 16(2), 326–338. <a href="https://doi.org/10.1093/biostatistics/kxu047" class="uri">https://doi.org/10.1093/biostatistics/kxu047</a></p>
+<p>Liu, H., Roeder, K., &amp; Wasserman, L. (2010). Stability Approach
+to Regularization Selection (StARS) for High Dimensional Graphical
+Models (arXiv:1006.3316). <em>arXiv.</em> <a href="https://doi.org/10.48550/arXiv.1006.3316" class="uri">https://doi.org/10.48550/arXiv.1006.3316</a></p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
