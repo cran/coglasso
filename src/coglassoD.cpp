@@ -8,22 +8,22 @@ using namespace Eigen;
 //[[Rcpp::depends(RcppEigen)]]
 //[[Rcpp::plugins(openmp)]
 
-void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, int pX, int p, double ialpha, double ic, Eigen::MatrixXd& Lambda_star, int& df, int& converged, bool scr, unsigned int index);
+void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, Rcpp::IntegerVector p, int p_tot, double ialpha, double ic, Eigen::MatrixXd& Lambda_star, int& df, int& converged, bool scr, unsigned int index);
 
 //[[Rcpp::export]]
-List co_glasso(Eigen::Map<Eigen::MatrixXd> S, int pX, Eigen::Map<Eigen::MatrixXd> hpars, Eigen::Map<Eigen::MatrixXd> T_guess, bool scr, bool verbose, bool cov_output)
+List co_glasso_D(Eigen::Map<Eigen::MatrixXd> S, Rcpp::IntegerVector p, Eigen::Map<Eigen::MatrixXd> hpars, bool scr, bool verbose, bool cov_output)
 {
   // Caller function, initiates what must be initiated and calls the main algorithm for 
   // every combination of hyperparameters.
     unsigned int nhpars = hpars.rows();
     int nfeatures = S.rows();
     auto S_diag = S.diagonal().array();
-    int& p = nfeatures;
+    int& p_tot = nfeatures;
     
     // Anti explosion warm start initialization strategy
     int size_c = 0;
     int nexploded = 0;
-    int last_c;
+    // int last_c; // for warm start
     IntegerVector idx_c(nhpars);
 
     bool zero_sol = true;
@@ -61,29 +61,39 @@ List co_glasso(Eigen::Map<Eigen::MatrixXd> S, int pX, Eigen::Map<Eigen::MatrixXd
         double c = hpars(i, 3);
 
         // Matrix of lambda_w and lambda_b multiplied by alpha is built here
-        MatrixXd Lambda_star_ij(p, p);
-        for (int row_i = 0; row_i < p; row_i++) {
-            for (int col_i = 0; col_i < p; col_i++) {
-                if ((row_i < pX && col_i < pX) || (row_i >= pX && col_i >= pX)) {
-                    Lambda_star_ij(row_i, col_i) = alpha * lambda_w;
-                    //Lambda_ij(row_i, col_i) = lambda_w;
-                }
-                else {
-                    Lambda_star_ij(row_i, col_i) = alpha * lambda_b;
-                    //Lambda_ij(row_i, col_i) = lambda_b;
+        // GENERAL |D|
+        int p_c = 0;
+        int p_l = 0;
+        int p_r = p[p_c];
+        MatrixXd Lambda_star_ij(p_tot, p_tot);
+
+        for (int row_i = 0; row_i < p_tot; row_i++) {
+            if ((row_i == p_r)) {
+                p_l = p_r;
+                p_c = p_c + 1;
+                p_r = p_r + p[p_c];
+            }
+            if ((row_i < p_r) && (row_i >= p_l)) {
+                for (int col_i = 0; col_i < p_tot; col_i++) {
+                    if ((col_i < p_r) && (col_i >= p_l)) {
+                        Lambda_star_ij(row_i, col_i) = alpha * lambda_w;
+                    }
+                    else {
+                        Lambda_star_ij(row_i, col_i) = alpha * lambda_b;
+                    }
                 }
             }
         }
-        
+
         // pre-screening by z
         // z vector of row (hence col) indexes for which more than one element 
         // is bigger than the ith lambda
         // q is the number of rows for which more than one element is bigger
         // than the ith lambda
         vector<int> z;
-        for (int row_i = 0; row_i < p; row_i++) {
+        for (int row_i = 0; row_i < p_tot; row_i++) {
             int break_flag = 0;
-            for (int col_i = 0; col_i < p; col_i++) {
+            for (int col_i = 0; col_i < p_tot; col_i++) {
                 if (break_flag > 1) break;
                 // should I use alpha*S (or maybe just lambda) since I'll be subtracting from alpha*S?
                 if (alpha * S(row_i, col_i) > Lambda_star_ij(row_i, col_i) or alpha * S(row_i, col_i) < -Lambda_star_ij(row_i, col_i)) break_flag++;
@@ -92,7 +102,7 @@ List co_glasso(Eigen::Map<Eigen::MatrixXd> S, int pX, Eigen::Map<Eigen::MatrixXd
             if (break_flag > 1) z.push_back(row_i);
         }
         int q = z.size();
-        MatrixXd sub_S(p, p), sub_W(p, p), sub_T(p, p);
+        MatrixXd sub_S(p_tot, p_tot), sub_W(p_tot, p_tot), sub_T(p_tot, p_tot);
         int sub_df = 0;
 
         // Rcout << "\n" << q << "\n";
@@ -121,14 +131,14 @@ List co_glasso(Eigen::Map<Eigen::MatrixXd> S, int pX, Eigen::Map<Eigen::MatrixXd
         // }
 
         // Without anti explosion
-        for (int ii = 0; ii < p; ii++) {
-            for (int jj = 0; jj < p; jj++) {
+        for (int ii = 0; ii < p_tot; ii++) {
+            for (int jj = 0; jj < p_tot; jj++) {
                 sub_S(ii, jj) = S(ii, jj);
                 if (zero_sol) {
                     // maybe initialize W to alpha * S?
                     sub_W(ii, jj) = S(ii, jj);
-                    sub_T(ii, jj) = ii == jj ? 1 : T_guess(ii, jj);
-                  }
+                    sub_T(ii, jj) = ii == jj ? 1 : 0;
+                }
                 else {
                     sub_W(ii, jj) = (*(tmp_cov_p.back()))(ii, jj);
                     sub_T(ii, jj) = (*(tmp_icov_p.back()))(ii, jj);
@@ -136,9 +146,10 @@ List co_glasso(Eigen::Map<Eigen::MatrixXd> S, int pX, Eigen::Map<Eigen::MatrixXd
             }
         }
 
+
         // Anti explosion warm start
-        // for (int ii = 0; ii < p; ii++) {
-        //     for (int jj = 0; jj < p; jj++) {
+        // for (int ii = 0; ii < p_tot; ii++) {
+        //     for (int jj = 0; jj < p_tot; jj++) {
         //         sub_S(ii, jj) = S(ii, jj);
         //         if (zero_sol) {
         //             if (size_c > 0) {
@@ -170,12 +181,12 @@ List co_glasso(Eigen::Map<Eigen::MatrixXd> S, int pX, Eigen::Map<Eigen::MatrixXd
         {
             if (verbose) {
                 if (scr)
-                    Rcout << "Conducting the collaborative graphical lasso (coglasso) wtih lossy screening....in progress: " << floor(100 * (1. - (1. * i / nhpars))) << "%\r";
+                    Rcout << "\rConducting the collaborative graphical lasso (coglasso) wtih lossy screening....in progress: " << floor(100 * (1. - (1. * i / nhpars))) << "%";
                 if (!scr)
-                    Rcout << "Conducting the collaborative graphical lasso (coglasso)....in progress: " << floor(100 * (1. - (1. * i / nhpars))) << "%\r";
+                    Rcout << "\rConducting the collaborative graphical lasso (coglasso)....in progress: " << floor(100 * (1. - (1. * i / nhpars))) << "%";
             }
 
-            coglasso_sub(sub_S, sub_W, sub_T, pX, p, alpha, c, Lambda_star_ij, sub_df, converged, scr, i);
+            coglasso_sub(sub_S, sub_W, sub_T, p, p_tot, alpha, c, Lambda_star_ij, sub_df, converged, scr, i);
             zero_sol = false;
         }
 
@@ -200,9 +211,9 @@ List co_glasso(Eigen::Map<Eigen::MatrixXd> S, int pX, Eigen::Map<Eigen::MatrixXd
         
 
         // update result list
-        tmp_path_p.push_back(new Eigen::MatrixXd(p, p));
-        tmp_icov_p.push_back(new Eigen::MatrixXd(p, p));
-        tmp_cov_p.push_back(new Eigen::MatrixXd(p, p));
+        tmp_path_p.push_back(new Eigen::MatrixXd(p_tot, p_tot));
+        tmp_icov_p.push_back(new Eigen::MatrixXd(p_tot, p_tot));
+        tmp_cov_p.push_back(new Eigen::MatrixXd(p_tot, p_tot));
 
         Eigen::MatrixXd* tmp_icov, * tmp_cov, * tmp_path;
         tmp_icov = tmp_icov_p.back();
@@ -217,8 +228,8 @@ List co_glasso(Eigen::Map<Eigen::MatrixXd> S, int pX, Eigen::Map<Eigen::MatrixXd
         if (!zero_sol)
         {
             //#pragma omp parallel for
-            for (int ii = 0; ii < p; ii++) {
-                for (int jj = 0; jj < p; jj++) {
+            for (int ii = 0; ii < p_tot; ii++) {
+                for (int jj = 0; jj < p_tot; jj++) {
                     (*tmp_icov)(ii, jj) = sub_T(ii, jj);
                     (*tmp_cov)(ii, jj) = sub_W(ii, jj);
                     (*tmp_path)(ii, jj) = sub_T(ii, jj) == 0 ? 0 : 1;
@@ -235,20 +246,12 @@ List co_glasso(Eigen::Map<Eigen::MatrixXd> S, int pX, Eigen::Map<Eigen::MatrixXd
             //         (*tmp_path)(z[ii], z[jj]) = ii == jj ? 0 : (*tmp_path)(z[ii], z[jj]);
             //     }
             // }
-            density[i] = 1.0 * sub_df / p / (p - 1);
+            density[i] = 1.0 * sub_df / p_tot / (p_tot - 1);
             df[i] = sub_df / 2;
             loglik[i] = log(sub_T.determinant()) - (sub_T * sub_S).diagonal().sum();
         }
 
     }
-    
-    if (verbose) {
-      if (scr)
-        Rcout << "Conducting the collaborative graphical lasso (coglasso) wtih lossy screening....done            \n";
-      if (!scr)
-        Rcout << "Conducting the collaborative graphical lasso (coglasso)....done            \n";
-    }
-    
     List path, icov, cov;
     for (unsigned int i = 0; i < nhpars; i++) {
         path.push_back(*(tmp_path_p[nhpars - 1 - i]));
@@ -279,23 +282,25 @@ List co_glasso(Eigen::Map<Eigen::MatrixXd> S, int pX, Eigen::Map<Eigen::MatrixXd
 // T is the matrix of coefficients (betas). Its diagonal-normalized form corresponds to the partial 
 //      correlation matrix. When warm start initialization is possible, the last available T matrix will be
 //      used, otherwise T is initialized as the identity matrix;
-// pX is the number of variables in the first data set. In practice it corresponds to the dimension 
-//      of the block in the matrix T of the interactions from the first data set to itself;
-// p is the dimension of our matrixes, the total number of variables;
-// ialpha is the alpha of the current combination of iperparameters. Remember that alpha is 1/(1+c) where c
-//      is the weight of the collaborative term of coglasso's expression;
+// p is the vector containing the number of variables in the various data sets. In practice it corresponds 
+//      to the dimensions of the blocks in the matrix T of the interactions from the various data sets to 
+//      themselves (within);
+// p_tot is the dimension of our matrixes, the total number of variables;
+// ialpha is the alpha of the current combination of iperparameters. Remember that alpha is 1/c(|D|-1) where c
+//      is the weight of the collaborative term of coglasso's expression and |D| is the number of data sets;
 // Lambda_star is the matrix of lambda_w and lambda_b multiplied by alpha, where lambda_w is the penalization
 //      for the "within" interactions and lambda_b is the penalization for the "between" interactions;
-// df is the number of degrees of freedom (?) of matrix T (the number of non-zero off-diagonal elements). 
+// df is the number of degrees of freedom of matrix T (the number of non-zero off-diagonal elements). 
 //      When warm start initialization is possible, the df number of the last available T matrix will be
 //      used, otherwise df is initialized to 0 (as T is the identity matrix);
 // scr is a parameter coming from the original glasso implementation, which I am thinking to remove. Not 
 //      used in the current coglasso implementation;
 // index is the index of the current combination of hyperparameters (that goes from number of combinations to 0).
 //
-void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, int pX, int p, double ialpha, double ic, Eigen::MatrixXd& Lambda_star, int& df, int& converged, bool scr, unsigned int index)
+void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, Rcpp::IntegerVector p, int p_tot, double ialpha, double ic, Eigen::MatrixXd& Lambda_star, int& df, int& converged, bool scr, unsigned int index)
 {
     int i, j, k; //initialize indices
+    int p_c, p_l, p_r; //indeces for |D| adapted algorithm (current, left, right)
     int rss_idx, w_idx;
 
     int gap_int;
@@ -308,14 +313,11 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
     int MAX_ITER_ACT = 10000;
     int iter_ext, iter_int, iter_act;
 
-
-
-    Eigen::MatrixXi idx_a(p, p); // active set
-    Eigen::MatrixXi idx_i(p, p); // The set possibly can join active set
-    int* size_a = (int*)malloc(p * sizeof(int)); //sizes of active sets
-    double* w1 = (double*)malloc(p * sizeof(double));
-    double* ww = (double*)malloc(p * sizeof(double));
-
+    Eigen::MatrixXi idx_a(p_tot, p_tot); // active set
+    Eigen::MatrixXi idx_i(p_tot, p_tot); // The set possibly can join active set
+    int* size_a = (int*)malloc(p_tot * sizeof(int)); //sizes of active sets
+    double* w1 = (double*)malloc(p_tot * sizeof(double));
+    double* ww = (double*)malloc(p_tot * sizeof(double));
 
     int size_a_prev; //original size of the active set
     int junk_a; //the number of coefficients returning to the inactive set from the active set
@@ -329,7 +331,8 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
     // that converged). If coefficients are different from 0 they are classified as
     // active, otherwise as inactive.
     //
-    for (i = 0; i < p; i++) {
+
+    for (i = 0; i < p_tot; i++) {
 
         W(i, i) = S(i, i) + Lambda_star(i,i)/ialpha; 
         // The diagonal elements are set optimal ???? 
@@ -340,7 +343,7 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
         tmp1 = T(i, i);
         T(i, i) = 0;
 
-        for (j = 0; j < p; j++) {
+        for (j = 0; j < p_tot; j++) {
             if (scr) // NOT USED REALLY
                 if (fabs(S(j, i)) <= Lambda_star(j,i)) {
                     idx_i(j, i) = -1;
@@ -358,7 +361,7 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
         }
         idx_i(i, i) = -1;
     }
-    
+
     // EXTERNAL WHILE LOOP - updates the matrix T by running the INTERNAL WHILE LOOP
     // column by column:
     // This loop iterates trhough the columns of the matrix of coefficients T with the    
@@ -379,14 +382,12 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
         tmp1 = 0; // What for??? Not used in the loop!
         tmp6 = 0;
         tmp5 = 0;
-        for (i = 0; i < p; i++)
+        for (i = 0; i < p_tot; i++)
         {
-
-
             gap_int = 1;
             iter_int = 0;
 
-            for (j = 0; j < p; j++)
+            for (j = 0; j < p_tot; j++)
                 ww[j] = T(j, i);
 
             // INTERNAL WHILE LOOP - activates inactive coefficients when appropriate, 
@@ -419,8 +420,19 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
                 // coefficient and it updates it (and activates it) when it does not remain 0.
                 // All active coefficients will enter the following ACTIVE COEFFICIENTS WHILE LOOP.
                 //
-                for (j = 0; j < p; j++)
+                p_c = 0;
+                p_l = 0;
+                p_r = p[p_c];
+
+                // Want idx_a elements to keep an increasing order
+                for (j = 0; j < p_tot; j++)
                 {
+                    if ((j == p_r)) {
+                        p_l = p_r;
+                        p_c = p_c + 1;
+                        p_r = p_r + p[p_c];
+                    }
+
                     if (idx_i(j, i) != -1)
                     {
                         r = ialpha*S(j, i); 
@@ -430,33 +442,18 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
                         // it here as in the following loop, but we know that T(w_idx, i)
                         // if the coefficient is inactive
 
-                        if (j < pX) {
-                            for (k = 0; k < size_a[i]; k++)
-                            {
-                                rss_idx = idx_a(k, i);
-                                if (rss_idx < pX) {
-                                    r = r - W(j, rss_idx) * T(rss_idx, i);
-                                }
-                                else {
-                                    // r = r + (1 - ialpha) * W(j, rss_idx) * T(rss_idx, i);
-                                    r = r - ialpha * (1 - ic) * W(j, rss_idx) * T(rss_idx, i);
-                                }
-                                
+                        for (k = 0; k < size_a[i]; k++)
+                        {
+                            rss_idx = idx_a(k, i);
+                            if ((rss_idx >= p_l) && (rss_idx < p_r)) {
+                                r = r - W(j, rss_idx) * T(rss_idx, i);
+                            }
+                            else {
+                                // r = r + ic * ialpha * W(j, rss_idx) * T(rss_idx, i);
+                                r = r - ialpha * (1 - ic) * W(j, rss_idx) * T(rss_idx, i);
                             }
                         }
-                        else {
-                            for (k = 0; k < size_a[i]; k++)
-                            {
-                                rss_idx = idx_a(k, i);
-                                if (rss_idx < pX) {
-                                    r = r - ialpha * (1 - ic) * W(j, rss_idx) * T(rss_idx, i);
-                                }
-                                else {
-                                    r = r - W(j, rss_idx) * T(rss_idx, i);
-                                }
-                            }
-                        }
-                        
+
                         if (r > Lambda_star(j, i))
                         {
                             w1[j] = (r - Lambda_star(j, i)) / W(j, j);
@@ -481,10 +478,21 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
                     }
                 }
                 
+                // Keep the first size_a[i] elements of idx_a in increasing order
+                for (int j = 0; j < size_a[i] - 1; ++j) {
+                    for (int k = 0; k < size_a[i] - j - 1; ++k) {
+                        if (idx_a(k, i) > idx_a(k + 1, i)) {
+                            int temp = idx_a(k, i);
+                            idx_a(k, i) = idx_a(k + 1, i);
+                            idx_a(k + 1, i) = temp;
+                        }
+                    }
+                }
+
                 // if (iter_ext == 1 && i == 1 && iter_int==0) {
                 //     Rcout << iter_int << "\n" << S << "\n\n" << W << "\n\n" << T << "\n\n";
                 // }
-                
+
                 gap_int = size_a[i] - size_a_prev;
 
                 gap_act = 1;
@@ -509,53 +517,48 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
                 // absolute distances current - previous and the absolute sum of the current
                 // estimated column of T is less than 0.0001. Otherwise we update once again.
                 // This is the loop where coefficients go to infinity at a certain point.
-                // 
                 while (gap_act > thol_act && iter_act < MAX_ITER_ACT)
                 {
                     tmp3 = 0;
                     tmp4 = 0;
+
+                    p_c = 0;
+                    p_l = 0;
+                    p_r = p[p_c];
                  
                     for (j = 0; j < size_a[i]; j++)
                     {
                         w_idx = idx_a(j, i);
-
+                        if ((w_idx >= p_r)) {
+                            p_l = p_r;
+                            p_c = p_c + 1;
+                            p_r = p_r + p[p_c];
+                        }
                         // here we iterate only through the active coefficients (the old 
                         // and the new ones coming from previous loop)
                         if (w_idx != -1)
                         {
-                            //tmp_a = w_idx*p;
-                            r = ialpha*S(w_idx, i) + T(w_idx, i) * W(w_idx, w_idx);
+                            //tmp_a = w_idx*p_tot;
+                            r = ialpha * S(w_idx, i) + T(w_idx, i) * W(w_idx, w_idx);
                             // we exclude T(w_idx, i) * W(w_idx, w_idx) from the following
                             // summation of subtractions (k != j in the summation of 
                             // subtractions of the formula) by adding it here
 
-                            if (w_idx < pX) {
-                                for (k = 0; k < size_a[i]; k++)
-                                {
-                                    rss_idx = idx_a(k, i);
-                                    if (rss_idx < pX) {
-                                        r = r - W(w_idx, rss_idx) * T(rss_idx, i);
-                                    }
-                                    else {
-                                        // r = r + (1 - ialpha) * W(w_idx, rss_idx) * T(rss_idx, i);
-                                        r = r - ialpha * (1 - ic) * W(w_idx, rss_idx) * T(rss_idx, i);
-                                    }
+                            for (k = 0; k < size_a[i]; k++)
+                            {
+                                rss_idx = idx_a(k, i);
+                                if ((rss_idx >= p_l) && (rss_idx < p_r)) {
+                                    r = r - W(w_idx, rss_idx) * T(rss_idx, i);
+                                }
+                                else {
+                                    r = r - ialpha * (1 - ic) * W(w_idx, rss_idx) * T(rss_idx, i);
+                                    // r = r + ic * ialpha * W(w_idx, rss_idx) * T(rss_idx, i);
                                 }
                             }
 
-                            else {
-                                for (k = 0; k < size_a[i]; k++)
-                                {
-                                    rss_idx = idx_a(k, i);
-                                    if (rss_idx < pX) {
-                                        // r = r + (1 - ialpha) * W(w_idx, rss_idx) * T(rss_idx, i);
-                                        r = r - ialpha * (1 - ic) * W(w_idx, rss_idx) * T(rss_idx, i);
-                                    }
-                                    else {
-                                        r = r - W(w_idx, rss_idx) * T(rss_idx, i);
-                                    }
-                                }
-                            }
+                            // if (iter_ext == 0 && i == 0 && iter_int < 5 && iter_act < 50) {
+                            //     Rcout << r << "\t\t" << w_idx << "\t\t" << iter_act << "\t\t" << iter_int << "\n";
+                            // }
 
                             if (r > Lambda_star(w_idx, i)) {
                                 w1[w_idx] = (r - Lambda_star(w_idx, i)) / W(w_idx, w_idx);
@@ -610,7 +613,6 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
                     else idx_a(j - junk_a, i) = w_idx;
                 }
                 size_a[i] = size_a[i] - junk_a;
-
                 // Rcout << iter_ext << "\t" << i << "\t" << iter_int << "\n\n";
 
                 iter_int++;
@@ -644,12 +646,12 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
                 W(j, i) = temp(j, 0);
                 W(i, j) = temp(j, 0);
             }
-            for (j = i + 1; j < p; j++) {
+            for (j = i + 1; j < p_tot; j++) {
                 W(j, i) = temp(j, 0);
                 W(i, j) = temp(j, 0);
             }
 
-            for (j = 0; j < p; j++)
+            for (j = 0; j < p_tot; j++)
                 tmp5 = tmp5 + fabs(ww[j] - T(j, i));
             tmp6 = tmp6 + tmp4;
         }
@@ -659,9 +661,11 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
         iter_ext++;
 
         // Rcout << iter_ext << "\n" << T << "\n\n";
+
+        
     }
 
-    for (i = 0; i < p; i++) //Compute the final T
+    for (i = 0; i < p_tot; i++) //Compute the final T
     {
         tmp2 = 0;
         tmp2 = W.col(i).transpose() * T.col(i) - W(i, i) * T(i, i);
@@ -670,16 +674,14 @@ void coglasso_sub(Eigen::MatrixXd& S, Eigen::MatrixXd& W, Eigen::MatrixXd& T, in
         T.col(i) *= -tmp1;
         T(i, i) = tmp1;
     }
-    for (i = 0; i < p; i++)
+    for (i = 0; i < p_tot; i++)
         df += size_a[i];
 
-    // if (isnan(T(0, 0))) Rcout << Lambda_star(0, 0) / ialpha << "\t" << Lambda_star(0, p - 1) / ialpha << "\t" << Lambda_star(0, 0) << "\t" << Lambda_star(0, p - 1) << "\t" << ialpha << "\t" << "Did not converge\n";
-    // else Rcout << Lambda_star(0, 0) / ialpha << "\t" << Lambda_star(0, p - 1) / ialpha << "\t" << Lambda_star(0, 0) << "\t" << Lambda_star(0, p - 1) << "\t" << ialpha  << "\n";
-    // if (isnan(T(0, 0))) Rcout << Lambda_star(0, 0) / ialpha << "\t" << Lambda_star(0, p - 1) / ialpha << "\t" << Lambda_star(0, 0) << "\t" << Lambda_star(0, p - 1) << "\t" << ialpha << "\n";
+    // if (isnan(T(0, 0))) Rcout << Lambda_star(0, 0) / ialpha << "\t" << Lambda_star(0, p_tot - 1) / ialpha << "\t" << Lambda_star(0, 0) << "\t" << Lambda_star(0, p_tot - 1) << "\t" << ialpha << "\t" << "Did not converge\n";
+    // else Rcout << Lambda_star(0, 0) / ialpha << "\t" << Lambda_star(0, p_tot - 1) / ialpha << "\t" << Lambda_star(0, 0) << "\t" << Lambda_star(0, p_tot - 1) << "\t" << ialpha  << "\n";
+    // if (isnan(T(0, 0))) Rcout << Lambda_star(0, 0) / ialpha << "\t" << Lambda_star(0, p_tot - 1) / ialpha << "\t" << Lambda_star(0, 0) << "\t" << Lambda_star(0, p_tot - 1) << "\t" << ialpha << "\n";
     if (!isnan(T(0, 0))) converged = 1;
     // Rcout << converged << "\n";
-
-    // Rcout << T << "\n\n";
 
     free(size_a);
     free(w1);

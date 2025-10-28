@@ -49,7 +49,7 @@ overflow: visible;
 </style>
 <style type="text/css" data-origin="pandoc">
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -60,7 +60,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -344,11 +344,12 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <h2>Introduction</h2>
 <p>This vignette serves the purpose to reproduce the results shown in
 the section “Real data example” of the manuscript describing
-<em>collaborative graphical lasso</em>. The computations carried out by
-the following code are heavy and could take a considerable amount of
-time. On our machine (RAM 48 Gb, CPU Intel(R) Xeon(R) W-2235 CPU @
-3.80GHz) it took almost 3 hours. Hence, we refer the user who wants to
-get started with the package to the introductory vignette:
+<em>collaborative graphical lasso</em> (<a href="#ref">Albanese, Kohlen
+and Behrouzi, 2024</a>). The computations carried out by the following
+code are heavy and could take a considerable amount of time. On our
+machine (RAM 48 Gb, CPU Intel(R) Xeon(R) W-2235 CPU @ 3.80GHz) it took
+almost 3 hours. Hence, we refer the user who wants to get started with
+the package to the introductory vignette:
 <code>vignette(&quot;coglasso&quot;)</code>. <em>Collaborative graphical
 lasso</em> is an algorithm to reconstruct multi-omics networks based on
 <em>graphical lasso</em> (<a href="#ref">Friedman, Hastie and
@@ -376,39 +377,24 @@ manuscript we explored 30 automatically generated <span class="math inline">\(λ
 <p>We can now build the networks, one per combination of the chosen
 hyperparameters, with <code>coglasso()</code>.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>cg <span class="ot">&lt;-</span> <span class="fu">coglasso</span>(multi_omics_sd,</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">pX =</span> <span class="dv">162</span>,</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">p =</span> <span class="dv">162</span>,</span>
 <span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">nlambda_w =</span> nlambda_w,</span>
 <span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">nlambda_b =</span> nlambda_b,</span>
 <span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">c =</span> cs</span>
 <span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>)</span></code></pre></div>
 <p>We proceed now to select the most stable, yet sparse network, using
-an adaptation to coglasso of <em>StARS</em> (<a href="#ref">Liu, Roeder
-and Wasserman, 2010</a>). The function implementing this adapted version
-is <code>stars_coglasso()</code>.</p>
+<em>eXtended StARS</em> (<em>XStARS</em>, <a href="#ref">Albanese,
+Kohlen and Behrouzi, 2024</a>), an adaptation to coglasso of
+<em>StARS</em> (<a href="#ref">Liu, Roeder and Wasserman, 2010</a>). The
+function implementing <em>XStARS</em> is <code>select_coglasso()</code>,
+when setting the argument <code>method</code> to “xstars” (which is the
+default behaviour).</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>sel_cg <span class="ot">&lt;-</span> <span class="fu">stars_coglasso</span>(cg)</span></code></pre></div>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>sel_cg <span class="ot">&lt;-</span> <span class="fu">select_coglasso</span>(cg, <span class="at">method =</span> <span class="st">&quot;xstars&quot;</span>)</span></code></pre></div>
 <p>We display now the selected network using the package
 <code>igraph</code>, reproducing the one displayed in Figure 3 of the
 manuscript. The orientation of the network may vary.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># To create the igraph object from the selected adjacency matrix:</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>sel_graph <span class="ot">&lt;-</span> igraph<span class="sc">::</span><span class="fu">graph.adjacency</span>(sel_cg<span class="sc">$</span>sel_adj, <span class="at">mode =</span> <span class="st">&quot;undirected&quot;</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co"># Setting some graphical parameters</span></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">V</span>(sel_graph)<span class="sc">$</span>label <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">V</span>(sel_graph)<span class="sc">$</span>color <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="st">&quot;#00ccff&quot;</span>, <span class="dv">162</span>), <span class="fu">rep</span>(<span class="st">&quot;#ff9999&quot;</span>, <span class="dv">76</span>))</span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">V</span>(sel_graph)<span class="sc">$</span>frame.color <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="st">&quot;#002060&quot;</span>, <span class="dv">162</span>), <span class="fu">rep</span>(<span class="st">&quot;#800000&quot;</span>, <span class="dv">76</span>))</span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">V</span>(sel_graph)<span class="sc">$</span>frame.width <span class="ot">&lt;-</span> <span class="dv">2</span></span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">V</span>(sel_graph)<span class="sc">$</span>size <span class="ot">&lt;-</span> <span class="dv">4</span></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">E</span>(sel_graph)<span class="sc">$</span>width <span class="ot">&lt;-</span> <span class="fl">0.3</span></span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a></span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co"># Setting a force-based network layout and removing disconnected nodes from the graph</span></span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>lo <span class="ot">&lt;-</span> igraph<span class="sc">::</span><span class="fu">layout_with_fr</span>(sel_graph)</span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>diconnected <span class="ot">&lt;-</span> <span class="fu">which</span>(igraph<span class="sc">::</span><span class="fu">degree</span>(sel_graph) <span class="sc">==</span> <span class="dv">0</span>)</span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>sel_graph2 <span class="ot">&lt;-</span> igraph<span class="sc">::</span><span class="fu">delete.vertices</span>(sel_graph, diconnected)</span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>lo2 <span class="ot">&lt;-</span> lo[<span class="sc">-</span>diconnected, ]</span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a></span>
-<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co"># Plotting</span></span>
-<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="fu">plot</span>(sel_graph2, <span class="at">layout =</span> lo2)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">plot</span>(sel_cg)</span></code></pre></div>
 <p>We now plot the subnetwork of the gene <em>Cirbp</em> and of its
 neighborhood. This reproduces the network displayed in Figure 4A.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>igraph<span class="sc">::</span><span class="fu">V</span>(sel_graph)<span class="sc">$</span>label<span class="ot">&lt;-</span><span class="fu">colnames</span>(sel_cg<span class="sc">$</span>data)</span>
@@ -441,6 +427,8 @@ code to reproduce it.</p>
 </div>
 <div id="ref" class="section level2">
 <h2>References</h2>
+<p>Albanese, A., Kohlen, W., &amp; Behrouzi, P. (2024). Collaborative
+graphical lasso (arXiv:2403.18602). <em>arXiv</em> <a href="https://doi.org/10.48550/arXiv.2403.18602" class="uri">https://doi.org/10.48550/arXiv.2403.18602</a></p>
 <p>Friedman, J., Hastie, T., &amp; Tibshirani, R. (2008). Sparse inverse
 covariance estimation with the graphical lasso. <em>Biostatistics</em>,
 9(3), 432–441. <a href="https://doi.org/10.1093/biostatistics/kxm045" class="uri">https://doi.org/10.1093/biostatistics/kxm045</a></p>

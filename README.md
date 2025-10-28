@@ -1,25 +1,27 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# coglasso - Collaborative Graphical Lasso
+# coglasso - Collaborative Graphical Lasso <a href="https://drquestion.github.io/coglasso/"><img src="man/figures/logo.png" align="right" height="138" alt="coglasso website" /></a>
 
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/DrQuestion/coglasso/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/DrQuestion/coglasso/actions/workflows/R-CMD-check.yaml)
 
 [![codecov](https://codecov.io/gh/DrQuestion/coglasso/graph/badge.svg?token=Q370RQ1CAD)](https://app.codecov.io/gh/DrQuestion/coglasso)
+
+[![downloads](https://cranlogs.r-pkg.org/badges/coglasso)](https://cran.r-project.org/package=coglasso)
 <!-- badges: end -->
 
 Coglasso implements *collaborative graphical lasso*, an algorithm for
-network reconstruction from multi-omics data sets (Albanese, Kohlen and
-Behrouzi, [2024](#references)). Our algorithm joins the principles of
-the *graphical lasso* by Friedman, Hastie and Tibshirani
+network reconstruction from multi-omics data sets ([Albanese, Kohlen and
+Behrouzi, 2024](#references)). Our algorithm joins the principles of the
+*graphical lasso* by Friedman, Hastie and Tibshirani
 ([2008](#references)) and *collaborative regression* by Gross and
 Tibshirani ([2015](#references)).
 
-## Installing from CRAN (not released on CRAN yet)
+## Installing coglasso
 
-You will be able to install the CRAN release of coglasso with:
+You can install the CRAN release of coglasso with:
 
 ``` r
 install.packages("coglasso")
@@ -45,33 +47,45 @@ devtools::install_github("DrQuestion/coglasso")
 
 ## Usage
 
-Here follows an example on how to reconstruct a multi-omics network with
-*collaborative graphical lasso*. For a more exhaustive example we refer
-the user to the vignette `vignette("coglasso")`. The package provides
-example multi-omics data sets of different dimensions, here we will use
-`multi_omics_sd_small`. Please notice that the current version of the
-coglasso package expects multi-omics data sets with *two* “omic” layers,
-where the single layers are grouped by column. For example, in
+Here follows an example on how to reconstruct and select a multi-omics
+network with *collaborative graphical lasso*. For a more exhaustive
+example we refer the user to the vignette `vignette("coglasso")`. The
+package provides example multi-omics data sets of different dimensions,
+here we will use `multi_omics_sd_small`. The current version of the
+coglasso package accepts multi-omics data sets with *multiple* “omic”
+layers, where the single layers are grouped by column. For example, in
 `multi_omics_sd_small` the first 14 columns represent transcript
-abundances, and the other 5 columns represent metabolite abundances. To
-default usage of `coglasso()` only needs the input dataset and the
-dimension of the first “omic” layer.
+abundances, and the other 5 columns represent metabolite abundances. The
+function to perform both network estimation and network selection is
+`bs()`. The suggested usage of `bs()` only needs the input data set, the
+dimensions of the “omic” layers, and the number of values to explore for
+each hyperparameter.
 
 ``` r
 library(coglasso)
 
-cg <- coglasso(multi_omics_sd_small, pX = 14)
+sel_cg <- bs(multi_omics_sd_small, pX = c(14, 5), nlambda_w = 15, nlambda_b = 15, nc = 5)
+
+# To see information about the network estimation and selection
+print(sel_cg)
 ```
 
-`coglasso()` explores several combinations of the hyperparameters
-characterizing *collaborative graphical lasso*. To select the
-combination yielding the most stable, yet sparse network, the package
-provides the function `stars_coglasso()`. This function implements a
-coglasso-adapted version of the *StARS* selection algorithm ([Liu,
-Roeder and Wasserman, 2010](#references)).
+`bs()` explores several combinations of the hyperparameters
+characterizing *collaborative graphical lasso*. Then, it selects the
+combination yielding the best network according to the chosen model
+selection method. Among others, this function implements *eXtended
+Efficient StARS* (*XEStARS*), a significantly faster and
+memory-efficient version of *eXtended StARS* (*XStARS*, [Albanese,
+Kohlen and Behrouzi, 2024](#ref)). These are coglasso-adapted versions
+of the *StARS* selection algorithm ([Liu, Roeder and Wasserman,
+2010](#references)) selecting the hyperparameter combination that yields
+the most stable, yet sparse network. *XEStARS* is the default option for
+the parameter `method`, so it is enough to enjoy the comfort of the
+default behaviour and let the function do the rest. To plot the selected
+network, use:
 
 ``` r
-sel_cg <- stars_coglasso(cg)
+plot(sel_cg)
 ```
 
 ## References

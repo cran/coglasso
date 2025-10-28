@@ -3,10 +3,11 @@
 \docType{package}
 \name{coglasso-package}
 \alias{coglasso-package}
-\alias{_PACKAGE}
 \title{coglasso: Collaborative Graphical Lasso - Multi-Omics Network Reconstruction}
 \description{
-Reconstruct networks from multi-omics data sets with the collaborative graphical lasso (coglasso) algorithm described in Albanese, A., Kohlen, W., and Behrouzi, P. (2024) \href{https://arxiv.org/abs/2403.18602}{arXiv:2403.18602}. Build multiple networks using the 'coglasso' function, select the best one with 'stars_coglasso'.
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
+Reconstruct networks from multi-omics data sets with the collaborative graphical lasso (coglasso) algorithm described in Albanese, A., Kohlen, W., and Behrouzi, P. (2024) \doi{10.48550/arXiv.2403.18602}. Use the main wrapper function `bs()` to build and select a multi-omics network.
 }
 \seealso{
 Useful links:
