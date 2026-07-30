@@ -4,6 +4,11 @@ editor_options:
     wrap: 72
 ---
 
+# coglasso 1.1.1 
+
+-   Collaborative graphical lasso was published! Updated documentation
+    and CITATION file accordingly.
+
 # coglasso 1.1.0
 
 ## New functions
@@ -47,7 +52,6 @@ editor_options:
     repetitions of the algorithm only once at the beginning of the
     algorithm. The original strategy performs this every time the
     algorithm switches from the selection of lambda_w to that of a
-    lambda_b (which can happen several times). Especially for larger
     data sets, this consists a huge difference.\
     **How do `xstars()` and `xestars()` differ in results?**\
     The impressive increase in speed comes with some minor costs.\

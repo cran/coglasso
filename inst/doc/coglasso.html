@@ -48,8 +48,9 @@ overflow: visible;
 }
 </style>
 <style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -60,7 +61,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -346,7 +347,7 @@ coglasso</h1>
 <p>This vignette illustrates the basic usage of the coglasso package to
 reconstruct a multi-omics network. The package implements an R interface
 to <em>collaborative graphical lasso</em> (<a href="#ref">Albanese,
-Kohlen and Behrouzi, 2024</a>), a network estimation algorithm based on
+Kohlen and Behrouzi, 2026</a>), a network estimation algorithm based on
 <em>graphical lasso</em> (<a href="#ref">Friedman, Hastie and
 Tibshirani, 2008</a>) and <em>collaborative regression</em> (<a href="#ref">Gross and Tibshirani, 2015</a>)</p>
 <p>Let us first attach coglasso.</p>
@@ -396,7 +397,7 @@ if one does not want to enjoy the comfort of the default behaviour. To
 select the best combination of hyperparameters, we will set
 <code>method</code> to “xestars” (which is the default behaviour). This
 implements <em>eXtended Efficient StARS</em>, a significantly faster
-version of <em>eXtended StARS</em> (<em>XStARS</em>, <a href="#ref">Albanese, Kohlen and Behrouzi, 2024</a>). <em>XEStARS</em>
+version of <em>eXtended StARS</em> (<em>XStARS</em>, <a href="#ref">Albanese, Kohlen and Behrouzi, 2026</a>). <em>XEStARS</em>
 and <em>XStARS</em> are a coglasso-adapted version of <em>StARS</em>,
 the stability selection method developed by Liu, Roeder and Wasserman
 (<a href="#ref">2010</a>). The suggested application of
@@ -425,15 +426,15 @@ of <code>bs()</code> and how to use them, please see
 <span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&gt; The model selection method was:</span></span>
 <span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt; xestars</span></span>
 <span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt; The density of the selected network is:</span></span>
-<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt; 0.06432749</span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt; 0.04678363</span></span>
 <span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#&gt; Networks are made of 2 omics layers, for a total of 19 nodes</span></span>
 <span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a><span class="co">#&gt; For each layer they have: 14 and 5 nodes, respectively</span></span>
 <span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="co">#&gt; The selected value for lambda within is:</span></span>
-<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="co">#&gt; 0.8276</span></span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="co">#&gt; 0.8503</span></span>
 <span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="co">#&gt; The selected value for lambda between is:</span></span>
-<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="co">#&gt; 0.5691</span></span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="co">#&gt; 0.5544</span></span>
 <span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a><span class="co">#&gt; The selected value for c is:</span></span>
 <span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a><span class="co">#&gt; 0.01</span></span>
 <span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a><span class="co">#&gt; </span></span>
@@ -452,12 +453,13 @@ of <code>bs()</code> and how to use them, please see
 yielding the most stable, yet sparse coglasso network. We can directly
 plot the selected network with:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">plot</span>(sel_cg)</span></code></pre></div>
-<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+<p><img role="img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASAAAAEgCAMAAAAjXV6yAAAB+1BMVEUAFyYAGzYAIGAAIGoAIG0AIHQAIHoAIH0AIH4AIIYAIJkAO4YAPrMAQmAAQrMATLMAU5EAYGAAYM0AdJkAdM0AfX0AfecAmJkAmM0AmNsAmOcAmP8AsrMAsv8AzM0AzP8XPrMdIGAgIGAhIGAmIGAmO3omap0oIGAqIGAxIGA6FyY6IGA6IG86IH06IJk6TH06TLM6dJk6dM06mZk6mbM6medEIGBEgJ1EgKlICABJIGBYdH1cAABcF0VcF2BfO2BmGzZmIGBmIH1mIJlmdJlmdM1mmbNmmedmvM1mvOdmvP9qNn1uAAB2XKl5U2B5qamAAACAAByAADqAAESAAGaACDaAJl+AOpCAZraIv/+QTGCQTJmQdLOQnmaQvLOQvP+Q3s2Q3v+Ram2RaoaRqamVJgCXAACXADqXVoOXZmaXkNucqamdTGCjlIapgHqplIapqZGpqZ2pqamtAACtWUitbZmtkDqtkNutnrOttratttuttv+vg322dGC2dH22vJm2/822///COgDCOjrCoZnCtpDCtv/Cv7PC27bC283C2//WZgDW25DW/9vW///bmXTbmX3bmbPb3rPb/83b/+fb///rkDrrkJDr/7br////g1b/hj3/mZn/tmb/vJn/vLP/25D/3qb/3rP/3uf//7b//83//9v//+f///+eSia5AAAACXBIWXMAAA7DAAAOwwHHb6hkAAAKYUlEQVR4nO2diXsbRxmHk4FGYA4XMBRIijkMhYrSFFAbziIopRGhWUwgYE6VYiBAm665ilHBLlBwoagEB1rwEkQU75/JfDOzh7SSfqm9K+9Kv/d5HO1q14n0PnN8M9/s5FhIJnLsqD9A2aEgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASoiqD9NaVa9rCrLOnLnfhq3lRFUBgGanFXXrWq1rChTiPs2Ku5UyFBD9hCEryhqdSyJjHUbxZUfMJKCTq7ZgrJU9/JCOrVKUgLagW1tpZx+ooIeqOpY/3m2TW1JI2SXCqEKgnqN5d0E61flDpVu12XIF2Wam2tjSVICFpht9buf2ZLtzi2kbZmendRkEEL0kUoaISRIFd09A8FCVqQLkJ3t02fFSxshRQ0iAjq1Zdsp959eVsqHAXFSCSte/lOywTSi1fuVeqeurRD36qb+rZU1D9cAkHSK435jqmiIXelyok/jU8mlECQblp0i6JLhvw5SCJI9172NsvU/JRIUDzYEjKj0f/pS/1Px9HgXAoKO0k4nB2va3ofjA/nU1BXtezYwfp5vVJSxaR5Ns1T73QyXp9PQYH6sBs7KHX78m01peqqtb/WCs0gTPdec94GSQlyYwc9Gn2d0oIeXznzWNIwdVXDHU3PT6kEdeLIT1ewk1KC9GH3VY/6QiixUCToCV3tlA2JxgVAvXo+wVGJBAX6CzlBgWuk5dDVK5H08BlXdHz3K0kYkGnUuyqfWdjyCDJxkBNkp53bcmjmOHqfk9uklfYtTlAylTjc7fU/m9NnK4GgKJJumEMZO9Rk0lCPJEyTJJcXd6VMJa2R7z9y4rzWFAsanmPUxTGnWfwSCJqAbq9Hvu9KkH/53jPale7etL63vsYUIdsuSWyQz/is5II+kBl9CH6S+9E18vSj/ndl2CpzjFui1EQFJvuRw0cos6Cx1cQPU22QmQKRbk+qmNzfiSaoOzPTi71UBgRJh+5ib9VsSDAVOEEBBblGOnCpRH3qphrNbcGsV7GxxIJMVPBtXZneIxXN7yzudmtmqlHuSo/dDk4VBfm2k3KRtITMt2pVd5s4oG8DhAfr6ajgMFRT0NC572LqIoZoMyDInFJQCj97JvWsRUEO/+ZO8qGCgiYooSAhZcEf1RzlS6UFZX3kb6jKgkbYoKAwkTBSRu6GqitotAoKcgqGm+fBqzlSUUHjPeRtqOSCzKg0mTztuan52EJ2xcOcCQrN5E60rMFlg1Qkod/MLgiZS0HxsgYzsbqslJ3t+OuoifmOsvnXrpl/TRJn+2sHm/6ohqCum5yOBNn5ss4r7sjMGUYJpGBBVsPqMay7o9884PxQhQR15LuffJs6aSTc6vebH7pjuAmyjZTakiUPYbC4m1qi1p1hQb26LE/UP0q9WYmgdveWWvsx9e733Xf/ifPpu00C8ZRSJqE2uIJ6ZgUpm1O1XznKMP9Ylsks/LbZCtTHlDpx/vGV++6XbI+smxFBJqNv6tjZNZcFmllBrn02rY7r5rtixeYN+82374bP/0aW3fsPnziv1GuXl29LC9K/3jH1cNYF2SdZ6q3eiqR2pIr1mw9pA+9/p3RkpirZdTN2Fb7R6VZQ2+TQrAsyMY8V1K21uy+T9M4rP9rqLJm8oRPRiFZ5DLRB8v6sCkotQogWgdi1H7e8V3dsHXstUElJMXfshqYX67pezC6BmE1BIzCh8lDesGES9OapzCfW7GqsxV2buJdVoMbwAZ/ZrKSg4bzhUpw31GdumZ6NpM098o6UvwM9dFdJQVnieIfTHRSEGKXA5g3HXDwclRM0WQEFURBiogImDikIMskBV3eEFASZIKGQZ4AoCEBBgBkSVMxTdhQEmB1BBT2mWUlBIzP2ST461w3fKilodMbeXh/aouHQVFhQJmNvToa2aDg0VRaUydhHpLZoODRVE+RamnEZ+8wWDYemwoKyGfsRWzQcmqoKGpmxjx7GTLZoODxVFTQyYx89jJls0XB4Ki4oztjXBx7G7OQXCJVR0KQ9u1ZsltmY2F9bvCIZ+/++69V/q7dyfxjTUkZBk/bsWnnQbJkj+syqusGM/T119YDK62FMS4kFDezZZTAmRiwaO+C6hJuizILSe3YZbFmhoBF7drmtKJZPSbyTWVU3t4KSPbvMlhxKnTIBYWZV3dwKSvbsCu2YwpagzKq6uRWU7NllosABQelVdfMqKL1nl4kCk0Z6cFXdnAoa2LPLRIFxNz+0qq6o/xFBKKMgsGfX8Kq6A6+uuynKKGgC4/bsKo7iBZnt2f7+jagSmLIRbc4WbeJ202PLMXt2FUjhgjp2vB0Pq6JnCORY9uDa//pWPHeKyG1ru5dA0YLcd5dcgyHazy8uQf8xw/LCNhQ/NAUL6jddB/P8OEHmNZft2IqhYEG9eiM5fKi5sCXV601WUCeuaubBgZJSsKAgnh0OzFT6vomG3/IRT/iqdmTMDExwmUvpv+P6xmaxH3IiUxNkq1OUBb1z9Zm7vul95ScrZvvap9J9tzdsaKYFma1qLVbQoo2G71z99cLWs6vP6Pd8/5Ezl78XO/C8f2sGy9BRUnQvFs15dd1csu3utaDf1dpXvV+a9xq6kHwh2jR63gS5HVU7DVuCzNPrQUML+lNz4efeTz1v81+e94mPe96FP68/ufGlH13W1esHIsi78Fx4Y1saKl3Frm/8alsfmTcuFfyJhyg+ku7azsoFzPKy1G8e++LX+p869+V3HD/3eXX83CePn9vcs0qe9rwX13/2oi5B/3juxvZmuLf6xw3vyQ1vdWdvdefG0zvhtfXptkhHNBbbk4b44gvm6+of9+Letz2cPtE3aKLr39+xV6dbhI5K0OqOec0IuviCkXBtXSu6OihofdMZmyplE6SrmbvD23QnKUHx1elxxIKub1wKr3qJoBvbupDsXbr2hzB89tL1DV3Rrv0iEeSuTvWTHokg6YxMK6M1eN4P1y/8ZdtUrE0xJld0DZPrcnLxnxtyafX367qhtlenSsUmzKYPBQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBgP8D8DSjvecOCXgAAAAASUVORK5CYII=" /><!-- --></p>
 </div>
 <div id="ref" class="section level2">
 <h2>References</h2>
-<p>Albanese, A., Kohlen, W., &amp; Behrouzi, P. (2024). Collaborative
-graphical lasso (arXiv:2403.18602). <em>arXiv</em> <a href="https://doi.org/10.48550/arXiv.2403.18602" class="uri">https://doi.org/10.48550/arXiv.2403.18602</a></p>
+<p>Albanese, A., Kohlen, W., &amp; Behrouzi, P. (2026). Multi-omics
+network reconstruction with collaborative graphical lasso.
+<em>Bioinformatics</em>, 42(7). <a href="https://doi.org/10.1093/bioinformatics/btag477" class="uri">https://doi.org/10.1093/bioinformatics/btag477</a></p>
 <p>Friedman, J., Hastie, T., &amp; Tibshirani, R. (2008). Sparse inverse
 covariance estimation with the graphical lasso. <em>Biostatistics</em>,
 9(3), 432–441. <a href="https://doi.org/10.1093/biostatistics/kxm045" class="uri">https://doi.org/10.1093/biostatistics/kxm045</a></p>

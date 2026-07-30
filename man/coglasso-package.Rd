@@ -7,7 +7,7 @@
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Reconstruct networks from multi-omics data sets with the collaborative graphical lasso (coglasso) algorithm described in Albanese, A., Kohlen, W., and Behrouzi, P. (2024) \doi{10.48550/arXiv.2403.18602}. Use the main wrapper function `bs()` to build and select a multi-omics network.
+Reconstruct networks from multi-omics data sets with the collaborative graphical lasso (coglasso) algorithm described in Albanese, A., Kohlen, W., and Behrouzi, P. (2026) \doi{10.1093/bioinformatics/btag477}. Use the main wrapper function `bs()` to build and select a multi-omics network.
 }
 \seealso{
 Useful links:
@@ -23,6 +23,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Alessio Albanese \email{alessio.albanese@wur.nl} (\href{https://orcid.org/0000-0003-1783-5613}{ORCID}) [copyright holder]
   \item Pariya Behrouzi \email{pariya.behrouzi@wur.nl} (\href{https://orcid.org/0000-0001-6762-5433}{ORCID})
 }
 

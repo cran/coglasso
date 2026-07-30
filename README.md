@@ -14,7 +14,7 @@
 
 Coglasso implements *collaborative graphical lasso*, an algorithm for
 network reconstruction from multi-omics data sets ([Albanese, Kohlen and
-Behrouzi, 2024](#references)). Our algorithm joins the principles of the
+Behrouzi, 2026](#references)). Our algorithm joins the principles of the
 *graphical lasso* by Friedman, Hastie and Tibshirani
 ([2008](#references)) and *collaborative regression* by Gross and
 Tibshirani ([2015](#references)).
@@ -76,7 +76,7 @@ combination yielding the best network according to the chosen model
 selection method. Among others, this function implements *eXtended
 Efficient StARS* (*XEStARS*), a significantly faster and
 memory-efficient version of *eXtended StARS* (*XStARS*, [Albanese,
-Kohlen and Behrouzi, 2024](#ref)). These are coglasso-adapted versions
+Kohlen and Behrouzi, 2026](#ref)). These are coglasso-adapted versions
 of the *StARS* selection algorithm ([Liu, Roeder and Wasserman,
 2010](#references)) selecting the hyperparameter combination that yields
 the most stable, yet sparse network. *XEStARS* is the default option for
@@ -90,9 +90,9 @@ plot(sel_cg)
 
 ## References
 
-Albanese, A., Kohlen, W., & Behrouzi, P. (2024). Collaborative graphical
-lasso (arXiv:2403.18602). *arXiv*
-<https://doi.org/10.48550/arXiv.2403.18602>
+Albanese, A., Kohlen, W., & Behrouzi, P. (2026). Multi-omics network
+reconstruction with collaborative graphical lasso. *Bioinformatics*,
+42(7). <https://doi.org/10.1093/bioinformatics/btag477>
 
 Friedman, J., Hastie, T., & Tibshirani, R. (2008). Sparse inverse
 covariance estimation with the graphical lasso. *Biostatistics*, 9(3),

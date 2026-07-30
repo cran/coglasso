@@ -1,13 +1,13 @@
 #' Multi-omics dataset of sleep deprivation in mouse
 #'
 #' @description A dataset containing transcript and metabolite values analysed
-#' in Albanese et al. 2023, subset of the multi-omics data set published in
+#' in Albanese et al. 2026, subset of the multi-omics data set published in
 #' Jan, M., Gobet, N., Diessler, S. et al. A multi-omics digital research object
 #' for the genetics of sleep regulation. Sci Data 6, 258 (2019).
 #'
 #' `multi_omics_sd_small` is a smaller version, limited to the transcript Cirbp
 #' and the transcripts and metabolites belonging to its neighborhood as
-#' described in Albanese et al. 2023
+#' described in Albanese et al. 2026
 #'
 #' `multi_omics_sd_micro` is a minimal version with Cirbp and a selection of its
 #'  neighborhood.
